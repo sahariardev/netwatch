@@ -15,7 +15,7 @@ pub struct Sock {
     pub __sk_common: SockCommon
 }
 
-pub fn event_from_socket(ctx:  &ProbeContext) -> Result<Event, i64> {
+pub fn event_from_sock(ctx:  &ProbeContext) -> Result<Event, i64> {
 
     let sk: *const Sock = ctx.arg(0).ok_or(-1)?;
 
@@ -27,9 +27,9 @@ pub fn event_from_socket(ctx:  &ProbeContext) -> Result<Event, i64> {
 
     Ok(Event{
         event_type: 0,
-        src_addr: src_addr,
-        dest_addr: dest_addr,
-        src_port: src_port,
+        src_addr: u32::from_be(src_addr),
+        dest_addr: u32::from_be(dest_addr),
+        src_port: u16::from_be(src_port),
         dest_port: u16::from_be(dest_port),
         pid: pid
     })

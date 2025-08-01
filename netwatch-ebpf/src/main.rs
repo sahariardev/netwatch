@@ -4,7 +4,7 @@
 use aya_ebpf::{macros::{kprobe, map}, programs::ProbeContext, maps::PerfEventArray};
 use netwatch_common::Event;
 pub mod event;
-use event::event_from_socket;
+use event::event_from_sock;
 
 #[map]
 pub static EVENTS: PerfEventArray<Event> = PerfEventArray::new(0);
@@ -19,7 +19,7 @@ pub fn tcp_connect(ctx: ProbeContext) -> u32 {
 
 
 fn try_tcp_connect(ctx: ProbeContext) -> Result<u32, i64> {
-    let event = event_from_socket(&ctx)?;
+    let event = event_from_sock(&ctx)?;
     EVENTS.output(&ctx, &event, 0);
     
     Ok(0)
