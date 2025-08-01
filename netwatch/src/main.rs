@@ -1,20 +1,32 @@
 use aya::{
     include_bytes_aligned,
     maps::perf::AsyncPerfEventArray,
-    programs::{KProbe, SchedClassifier, TcAttachType},
+    programs::KProbe,
     util::online_cpus,
-    Bpf,
 };
 use netwatch_common::Event;
 use log::{debug, warn};
+use ratatui::{prelude::CrosstermBackend, Terminal};
 use tokio::signal;
 use clap::Parser;
 use bytes::BytesMut;
 use std::{mem, ptr};
+use tokio::sync::mpsc;
+use crossterm::{
+    event::{self, Event as CrosstermEvent, KeyCode},
+    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
+    ExecutableCommand,
+};
+use std::io::stdout;
+use std::time::Duration;
 
 use anyhow::anyhow;
 
+
+use view::App;
+use view::ui;
 mod  detail_event;
+mod view;
 use detail_event::DetailEvent;
 
 #[derive(Parser, Debug)]
@@ -65,7 +77,11 @@ async fn main() -> Result<(), anyhow::Error> {
     let perf_array = ebpf.take_map("EVENTS")
     .ok_or_else(|| anyhow!("Failed to take the EVENTS map"))?;
     let mut events = AsyncPerfEventArray::try_from(perf_array)?;
+
+    let (tx, mut rx) = mpsc::channel::<DetailEvent>(100);
+
     for cpu in cpus {
+        let tx_clone = tx.clone();
         let mut buf = events.open(cpu, None)?;
 
         tokio::task::spawn(async move {
@@ -81,16 +97,49 @@ async fn main() -> Result<(), anyhow::Error> {
                     let event = unsafe { ptr::read_unaligned(buf.as_ptr() as *const Event) };
 
                     let detail_event : DetailEvent = event.into();
-                    println!("Detail event : {:?}", detail_event);
+                    
+                    if let Err(e) = tx_clone.send(detail_event).await {
+                        warn!("Failed to send event to UI: {}", e);
+                    }
 
                 }
             }
         });
     }
 
+    drop(tx);
+    stdout().execute(EnterAlternateScreen)?;
+    enable_raw_mode()?;
+    let mut terminal = Terminal::new(CrosstermBackend::new(stdout()))?;
+    terminal.clear()?;
 
-    let ctrl_c = signal::ctrl_c();
-    ctrl_c.await?;
+    let mut app = App::new();
+
+    loop {
+        terminal.draw(|frame| ui(frame, &mut app))?;
+
+        if event::poll(Duration::from_millis(50))? {
+            if let CrosstermEvent::Key(key) = event::read()? {
+                match key.code {
+                    KeyCode::Char('q') => break, // Quit
+                    KeyCode::Down => app.scroll_down(),
+                    KeyCode::Up => app.scroll_up(),
+                    _ => {}
+                }
+            }
+        }
+
+        if let Ok(detail_event) = rx.try_recv() {
+            app.events.push(detail_event);
+            if app.events.len() > 0 {
+                    app.scroll_state.select(Some(app.events.len() - 1));
+            }
+        }
+    }
+
+    stdout().execute(LeaveAlternateScreen)?;
+    disable_raw_mode()?;
+
     println!("Exiting...");
 
     Ok(())

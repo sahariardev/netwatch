@@ -1,6 +1,7 @@
 use chrono::{DateTime, Utc};
 use netwatch_common::Event;
 use std::net::Ipv4Addr;
+use ratatui::style::Color;
 
 #[derive(Clone, Debug)]
 pub struct DetailEvent {
@@ -29,6 +30,15 @@ impl EventType {
             2 => Ok(EventType::Receive),
             3 => Ok(EventType::Close),
             other => Err(format!("Invalid event type: {} is not valid value..", other))
+        }
+    }
+
+    pub fn get_color(&self) -> Color {
+        match self {
+            EventType::Connect => Color::Green,
+            EventType::Send => Color::Cyan,
+            EventType::Receive => Color::Blue,
+            EventType::Close => Color::Red,
         }
     }
 }
