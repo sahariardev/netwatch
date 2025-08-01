@@ -41,7 +41,7 @@ pub fn ui(frame: &mut Frame, app: &mut App) {
         .iter()
         .map(|event| {
             let color = event.event_type.get_color();
-            let style = Style::default().fg(color);  
+            let style = Style::default().bg(color);  
             ListItem::new(format!("{:?}", event)).style(style)
         })
         .collect();
