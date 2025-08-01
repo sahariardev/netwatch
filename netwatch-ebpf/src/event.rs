@@ -15,7 +15,7 @@ pub struct Sock {
     pub __sk_common: SockCommon
 }
 
-pub fn event_from_sock(ctx:  &ProbeContext) -> Result<Event, i64> {
+pub fn event_from_sock(ctx:  &ProbeContext, event_type: u8) -> Result<Event, i64> {
 
     let sk: *const Sock = ctx.arg(0).ok_or(-1)?;
 
@@ -26,7 +26,7 @@ pub fn event_from_sock(ctx:  &ProbeContext) -> Result<Event, i64> {
     let pid = (unsafe { bpf_get_current_pid_tgid()} >> 32) as u32;
 
     Ok(Event{
-        event_type: 0,
+        event_type: event_type,
         src_addr: u32::from_be(src_addr),
         dest_addr: u32::from_be(dest_addr),
         src_port: u16::from_be(src_port),

@@ -46,6 +46,18 @@ async fn main() -> Result<(), anyhow::Error> {
     program.load()?;
     program.attach("tcp_connect", 0)?;
 
+    let program: &mut KProbe = ebpf.program_mut("tcp_send_message").unwrap().try_into()?;
+    program.load()?;
+    program.attach("tcp_sendmsg", 0)?;
+
+    let program: &mut KProbe = ebpf.program_mut("tcp_receive_message").unwrap().try_into()?;
+    program.load()?;
+    program.attach("tcp_recvmsg", 0)?;
+
+    let program: &mut KProbe = ebpf.program_mut("tcp_close").unwrap().try_into()?;
+    program.load()?;
+    program.attach("tcp_close", 0)?;
+
     let opts = Opts::parse();
 
     let cpus = online_cpus().map_err(|(msg, err)| anyhow!("{}: {}", msg, err))?;

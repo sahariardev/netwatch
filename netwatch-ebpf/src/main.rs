@@ -11,15 +11,38 @@ pub static EVENTS: PerfEventArray<Event> = PerfEventArray::new(0);
 
 #[kprobe]
 pub fn tcp_connect(ctx: ProbeContext) -> u32 {
-    match try_tcp_connect(ctx) {
+    match try_tcp_connect(ctx, 0) {
         Ok(ret) => ret,
         Err(_) => 0,
     }
 }
 
+#[kprobe]
+pub fn tcp_send_message(ctx: ProbeContext) -> u32 {
+    match try_tcp_connect(ctx, 1) {
+        Ok(ret) => ret,
+        Err(_) => 0,
+    }
+}
 
-fn try_tcp_connect(ctx: ProbeContext) -> Result<u32, i64> {
-    let event = event_from_sock(&ctx)?;
+#[kprobe]
+pub fn tcp_receive_message(ctx: ProbeContext) -> u32 {
+    match try_tcp_connect(ctx, 2) {
+        Ok(ret) => ret,
+        Err(_) => 0,
+    }
+}
+
+#[kprobe]
+pub fn tcp_close(ctx: ProbeContext) -> u32 {
+    match try_tcp_connect(ctx, 3) {
+        Ok(ret) => ret,
+        Err(_) => 0,
+    }
+}
+
+fn try_tcp_connect(ctx: ProbeContext, event_type: u8) -> Result<u32, i64> {
+    let event = event_from_sock(&ctx, event_type)?;
     EVENTS.output(&ctx, &event, 0);
     
     Ok(0)
