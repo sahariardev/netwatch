@@ -14,6 +14,9 @@ use std::{mem, ptr};
 
 use anyhow::anyhow;
 
+mod  detail_event;
+use detail_event::DetailEvent;
+
 #[derive(Parser, Debug)]
 struct Opts {
     #[arg[long]]
@@ -63,10 +66,11 @@ async fn main() -> Result<(), anyhow::Error> {
                 for i in 0..events.read {
                     let buf = &mut buffers[i];
 
-                    let hdr = unsafe { ptr::read_unaligned(buf.as_ptr() as *const Event) };
+                    let event = unsafe { ptr::read_unaligned(buf.as_ptr() as *const Event) };
 
-                    println!("source address: {:?}, source port: {}, destination address: {:?}, destination port: {}", 
-                        hdr.src_addr, hdr.src_port, hdr.dest_addr, hdr.dest_port);
+                    let detail_event : DetailEvent = event.into();
+                    println!("Detail event : {:?}", detail_event);
+
                 }
             }
         });
