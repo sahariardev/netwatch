@@ -1,6 +1,7 @@
 use ratatui::{
     prelude::*,
-    widgets::{Block, Borders, List, ListItem, ListState},
+    widgets::{Block, Borders, List, ListItem, ListState, Paragraph},
+    layout::{Layout, Constraint, Direction}
 };
 
 use crate::detail_event::DetailEvent; 
@@ -36,6 +37,15 @@ impl App {
 }
 
 pub fn ui(frame: &mut Frame, app: &mut App) {
+
+    let chunks = Layout::default()
+                .direction(Direction::Horizontal)
+                .constraints([
+                    Constraint::Percentage(70),
+                    Constraint::Percentage(30)
+                ]).split(frame.size());
+
+
     let items: Vec<ListItem> = app
         .events
         .iter()
@@ -50,5 +60,10 @@ pub fn ui(frame: &mut Frame, app: &mut App) {
             .block(Block::default().borders(Borders::ALL).title("Netwatch Events"))
             .highlight_style(Style::default().add_modifier(Modifier::REVERSED));
 
-    frame.render_stateful_widget(event_list, frame.size(), &mut app.scroll_state);    
+    frame.render_stateful_widget(event_list, chunks[0], &mut app.scroll_state);
+
+    let stats_block = Paragraph::new("Hello")
+        .block(Block::default().borders(Borders::ALL).title("Stats"));
+
+    frame.render_widget(stats_block, chunks[1]);    
 }
